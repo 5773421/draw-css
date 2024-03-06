@@ -4,39 +4,32 @@ const systemPrompt = `You are an expert tailwind developer. A user will provide 
 if you need to insert an image, use placehold.co to create a placeholder image. Respond only with the html file.`;
 
 export async function POST(request: Request) {
-  const { image } = await request.json();
-  const body: GPT4VCompletionRequest = {
-    model: "gpt-4-vision-preview",
-    max_tokens: 4096,
-    messages: [
+  const { image } = await request.json();  // Assume 'image' contains the necessary image data
+  const body: any = {
+    model_name: "gemini-pro-vision",  // Specify the Gemini Pro Vision model
+    prompts: [
       {
-        role: "system",
-        content: systemPrompt,
+        type: "text",  // Type for text prompts
+        content: "What is in this photo?"  // The text part of the prompt
       },
       {
-        role: "user",
-        content: [
-          {
-            type: "image_url",
-            image_url: { url: image, detail: "high" },
-          },
-          "Turn this into a single html file using tailwind.",
-        ],
-      },
-    ],
+        type: "image",  // Type for image prompts
+        content: image  // The image part of the prompt
+      }
+    ]
   };
 
   let json = null;
   try {
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyCUdA1sEGi_mQdHZ2MA9QcyMZSZGci1z2Y", {  // URL updated for the Gemini API
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify(body),
     });
     json = await resp.json();
+    console.log('json', json);
   } catch (e) {
     console.log(e);
   }
@@ -48,37 +41,3 @@ export async function POST(request: Request) {
   });
 }
 
-type MessageContent =
-  | string
-  | (
-      | string
-      | {
-          type: "image_url";
-          image_url: string | { url: string; detail: "low" | "high" | "auto" };
-        }
-    )[];
-
-export type GPT4VCompletionRequest = {
-  model: "gpt-4-vision-preview";
-  messages: {
-    role: "system" | "user" | "assistant" | "function";
-    content: MessageContent;
-    name?: string | undefined;
-  }[];
-  functions?: any[] | undefined;
-  function_call?: any | undefined;
-  stream?: boolean | undefined;
-  temperature?: number | undefined;
-  top_p?: number | undefined;
-  max_tokens?: number | undefined;
-  n?: number | undefined;
-  best_of?: number | undefined;
-  frequency_penalty?: number | undefined;
-  presence_penalty?: number | undefined;
-  logit_bias?:
-    | {
-        [x: string]: number;
-      }
-    | undefined;
-  stop?: (string[] | string) | undefined;
-};
